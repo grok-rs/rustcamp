@@ -3,3 +3,7 @@ name = "task_1_2"
 version = "0.1.0"
 edition = "2021"
 publish = false
+
+[dependencies]
+pin-project = "1.1.7"
+tokio = { version = "1.42.0", features = ["full"] }

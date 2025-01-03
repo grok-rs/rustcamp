@@ -38,7 +38,7 @@ impl Polyline {
 fn main() {
     let a = Point { x: 1.0, y: 2.0 };
     println!("Point: {:?}", a);
-    let b = a.clone();
+    let b = a;
 
     let mut polyline = Polyline::new();
     polyline.add_point(a);
