@@ -17,18 +17,19 @@ impl<T> Node<T> {
     }
 }
 
+#[derive(Clone)]
 pub struct DoublyLinkedList<T> {
-    head: Mutex<Option<Arc<Node<T>>>>,
-    tail: Mutex<Option<Arc<Node<T>>>>,
-    length: Mutex<usize>,
+    head: Arc<Mutex<Option<Arc<Node<T>>>>>,
+    tail: Arc<Mutex<Option<Arc<Node<T>>>>>,
+    length: Arc<Mutex<usize>>,
 }
 
 impl<T> DoublyLinkedList<T> {
     pub fn new() -> Self {
         Self {
-            head: Mutex::new(None),
-            tail: Mutex::new(None),
-            length: Mutex::new(0),
+            head: Arc::new(Mutex::new(None)),
+            tail: Arc::new(Mutex::new(None)),
+            length: Arc::new(Mutex::new(0)),
         }
     }
 
@@ -157,15 +158,15 @@ fn main() {
     println!("{:?}", list);
 
     // Test multi-threaded operations
-    let list = Arc::new(DoublyLinkedList::new());
+    let list = DoublyLinkedList::new();
 
-    let list_clone1 = Arc::clone(&list);
+    let list_clone1 = list.clone();
     let handle1 = std::thread::spawn(move || {
         list_clone1.push_front(1);
         list_clone1.push_front(2);
     });
 
-    let list_clone2 = Arc::clone(&list);
+    let list_clone2 = list.clone();
     let handle2 = std::thread::spawn(move || {
         list_clone2.push_back(3);
         list_clone2.push_back(4);
@@ -199,15 +200,15 @@ mod tests {
 
     #[test]
     fn multi_thread_operations() {
-        let list = Arc::new(DoublyLinkedList::new());
+        let list = DoublyLinkedList::new();
 
-        let list_clone1 = Arc::clone(&list);
+        let list_clone1 = list.clone();
         let handle1 = thread::spawn(move || {
             list_clone1.push_front(1);
             list_clone1.push_front(2);
         });
 
-        let list_clone2 = Arc::clone(&list);
+        let list_clone2 = list.clone();
         let handle2 = thread::spawn(move || {
             list_clone2.push_back(3);
             list_clone2.push_back(4);
