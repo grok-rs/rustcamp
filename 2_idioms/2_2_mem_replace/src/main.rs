@@ -1,3 +1,6 @@
+use std::fmt::Debug;
+use std::mem;
+
 fn main() {
     let mut s = Solver {
         expected: Trinity { a: 1, b: 2, c: 3 },
@@ -21,12 +24,8 @@ struct Trinity<T> {
 
 impl<T: Clone> Trinity<T> {
     fn rotate(&mut self) {
-        let a = self.a.clone();
-        let b = self.b.clone();
-        let c = self.c.clone();
-        self.a = b;
-        self.b = c;
-        self.c = a;
+        mem::swap(&mut self.a, &mut self.b);
+        mem::swap(&mut self.b, &mut self.c);
     }
 }
 
@@ -36,18 +35,79 @@ struct Solver<T> {
     unsolved: Vec<Trinity<T>>,
 }
 
-impl<T: Clone + PartialEq> Solver<T> {
+impl<T: Clone + PartialEq + Debug> Solver<T> {
+    /// Removes any item from `unsolved` that matches `expected` in *any* of its 3 rotations.
     fn resolve(&mut self) {
-        let mut unsolved = Vec::with_capacity(self.unsolved.len());
-        'l: for t in self.unsolved.iter_mut() {
+        self.unsolved.retain_mut(|trinity| {
             for _ in 0..3 {
-                if *t == self.expected {
-                    continue 'l;
+                if *trinity == self.expected {
+                    return false;
                 }
-                t.rotate();
+                trinity.rotate();
             }
-            unsolved.push(t.clone())
-        }
-        self.unsolved = unsolved;
+            true
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trinity_rotate() {
+        let mut t = Trinity { a: 1, b: 2, c: 3 };
+        t.rotate();
+        assert_eq!(t, Trinity { a: 2, b: 3, c: 1 });
+
+        t.rotate();
+        assert_eq!(t, Trinity { a: 3, b: 1, c: 2 });
+
+        t.rotate();
+        assert_eq!(t, Trinity { a: 1, b: 2, c: 3 });
+    }
+
+    #[test]
+    fn test_solver_resolve() {
+        let mut solver = Solver {
+            expected: Trinity { a: 1, b: 2, c: 3 },
+            unsolved: vec![
+                Trinity { a: 1, b: 2, c: 3 },
+                Trinity { a: 2, b: 1, c: 3 },
+                Trinity { a: 2, b: 3, c: 1 },
+                Trinity { a: 3, b: 1, c: 2 },
+            ],
+        };
+
+        solver.resolve();
+
+        assert_eq!(solver.unsolved, vec![Trinity { a: 2, b: 1, c: 3 },]);
+    }
+
+    #[test]
+    fn test_solver_resolve_no_unsolved() {
+        let mut solver = Solver {
+            expected: Trinity { a: 1, b: 2, c: 3 },
+            unsolved: vec![Trinity { a: 1, b: 2, c: 3 }, Trinity { a: 1, b: 2, c: 3 }],
+        };
+
+        solver.resolve();
+
+        assert!(solver.unsolved.is_empty());
+    }
+
+    #[test]
+    fn test_solver_resolve_all_unsolved() {
+        let mut solver = Solver {
+            expected: Trinity { a: 1, b: 2, c: 3 },
+            unsolved: vec![Trinity { a: 4, b: 5, c: 6 }, Trinity { a: 7, b: 8, c: 9 }],
+        };
+
+        solver.resolve();
+
+        assert_eq!(
+            solver.unsolved,
+            vec![Trinity { a: 4, b: 5, c: 6 }, Trinity { a: 7, b: 8, c: 9 },]
+        );
     }
 }
