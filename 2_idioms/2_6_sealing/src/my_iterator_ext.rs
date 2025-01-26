@@ -10,6 +10,8 @@ use self::format::{Format, FormatWith};
 
 mod private {
     pub trait Sealed {}
+
+    impl<T> Sealed for T where T: super::MyIteratorExt {}
 }
 
 /// Extension trait for an [`Iterator`].
