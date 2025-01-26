@@ -67,7 +67,7 @@ pub trait MyError: Debug + Display {
     ///
     /// __This is memory-unsafe to override in user code.__
     #[doc(hidden)]
-    fn type_id(&self) -> TypeId
+    fn type_id(&self, _: private::Token) -> TypeId
     where
         Self: 'static,
     {
@@ -79,4 +79,9 @@ impl<'a, T: MyError + ?Sized> MyError for &'a T {
     fn source(&self) -> Option<&(dyn MyError + 'static)> {
         MyError::source(&**self)
     }
+}
+
+mod private {
+    // A zero-sized private token type.
+    pub struct Token;
 }

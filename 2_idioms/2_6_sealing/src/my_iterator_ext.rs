@@ -8,8 +8,12 @@ use std::fmt;
 
 use self::format::{Format, FormatWith};
 
+mod private {
+    pub trait Sealed {}
+}
+
 /// Extension trait for an [`Iterator`].
-pub trait MyIteratorExt: Iterator {
+pub trait MyIteratorExt: Iterator + private::Sealed {
     /// Format all iterator elements, separated by `sep`.
     ///
     /// All elements are formatted (any formatting trait)
