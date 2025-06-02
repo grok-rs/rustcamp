@@ -13,14 +13,7 @@ trait SayHi: fmt::Debug {
 }
 
 trait MutMeSomehow {
-    fn mut_me_somehow(self: Pin<&mut Self>) {
-        // Implementation must be meaningful, and
-        // obviously call something requiring `&mut self`.
-        // The point here is to practice dealing with
-        // `Pin<&mut Self>` -> `&mut self` conversion
-        // in different contexts, without introducing
-        // any `Unpin` trait bounds.
-    }
+    fn mut_me_somehow(self: Pin<&mut Self>) {}
 }
 
 impl<T> SayHi for Box<T>
@@ -63,24 +56,23 @@ where
     }
 }
 
-// TODO Investigate
-// impl<T> SayHi for Vec<T>
-// where
-//     T: fmt::Debug,
-// {
-//     fn say_hi(self: Pin<&Self>) {
-//         println!("Hi from Vec {:?}", self.get_ref())
-//     }
-// }
+impl<T> SayHi for Vec<T>
+where
+    T: fmt::Debug,
+{
+    fn say_hi(self: Pin<&Self>) {
+        println!("Hi from Vec {:?}", self.get_ref())
+    }
+}
 
-// impl<T> MutMeSomehow for Vec<Pin<Box<T>>>
-// where
-//     T: fmt::Debug + Default,
-// {
-//     fn mut_me_somehow(self: Pin<&mut Self>) {
-//         *self.get_mut() = Vec::default();
-//     }
-// }
+impl<T> MutMeSomehow for Vec<Pin<Box<T>>>
+where
+    T: fmt::Debug + Default,
+{
+    fn mut_me_somehow(self: Pin<&mut Self>) {
+        *self.get_mut() = Vec::default();
+    }
+}
 
 impl SayHi for String {
     fn say_hi(self: Pin<&Self>) {
@@ -104,7 +96,9 @@ impl<'a> SayHi for &'a [u8] {
 
 impl<'a> MutMeSomehow for &'a [u8] {
     fn mut_me_somehow(self: Pin<&mut Self>) {
-        panic!("Cannot mutate an immutable slice of bytes (&[u8])");
+        let array = self.get_mut();
+        const SECRET: [u8; 3] = [1, 2, 3];
+        std::mem::swap(array, &mut &SECRET[..]);
     }
 }
 
@@ -151,7 +145,7 @@ mod tests {
     fn test_box_say_hi() {
         let value = Box::new(42);
         let pinned = Pin::new(&value);
-        pinned.say_hi(); // Expect "Hi from Box ..."
+        pinned.say_hi();
     }
 
     #[test]
@@ -159,14 +153,14 @@ mod tests {
         let mut value = Box::new(42);
         let mut pinned = Pin::new(&mut value);
         pinned.as_mut().mut_me_somehow();
-        assert_eq!(*value, 0); // Assuming the mutation sets it to the default value
+        assert_eq!(*value, 0);
     }
 
     #[test]
     fn test_rc_say_hi() {
         let value = Rc::new(42);
         let pinned = Pin::new(&value);
-        pinned.say_hi(); // Expect "Hi from Rc ..."
+        pinned.say_hi();
     }
 
     #[test]
@@ -174,29 +168,29 @@ mod tests {
         let mut value = Rc::new(42);
         let mut pinned = Pin::new(&mut value);
         pinned.as_mut().mut_me_somehow();
-        assert_eq!(*Rc::get_mut(&mut value).unwrap(), 0); // Assuming mutation sets it to the default value
+        assert_eq!(*Rc::get_mut(&mut value).unwrap(), 0);
     }
 
-    // #[test]
-    // fn test_vec_say_hi() {
-    //     let value = vec![1, 2, 3];
-    //     let pinned = Pin::new(&value);
-    //     pinned.say_hi(); // Expect "Hi from Vec ..."
-    // }
+    #[test]
+    fn test_vec_say_hi() {
+        let value = vec![1, 2, 3];
+        let pinned = Pin::new(&value);
+        pinned.say_hi();
+    }
 
-    // #[test]
-    // fn test_vec_mut_me_somehow() {
-    //     let mut value = vec![Pin::new(Box::new(1))];
-    //     let mut pinned = Pin::new(&mut value);
-    //     pinned.as_mut().mut_me_somehow();
-    //     assert_eq!(value, vec![Pin::new(Box::new(0))]); // Assuming the mutation appends the default value
-    // }
+    #[test]
+    fn test_vec_mut_me_somehow() {
+        let mut value = vec![Pin::new(Box::new(1))];
+        let mut pinned = Pin::new(&mut value);
+        pinned.as_mut().mut_me_somehow();
+        assert_eq!(value, Vec::<Pin<Box<i32>>>::default());
+    }
 
     #[test]
     fn test_string_say_hi() {
         let value = String::from("Hello");
         let pinned = Pin::new(&value);
-        pinned.say_hi(); // Expect "Hi from String ..."
+        pinned.say_hi();
     }
 
     #[test]
@@ -204,21 +198,22 @@ mod tests {
         let mut value = String::from("Hello");
         let mut pinned = Pin::new(&mut value);
         pinned.as_mut().mut_me_somehow();
-        assert_eq!(value, "Hello!"); // Assuming the mutation appends an exclamation mark
+        assert_eq!(value, "Hello!");
     }
 
-    // #[test]
-    // fn test_t_say_hi() {
-    //     let value = 42;
-    //     let pinned = Pin::new(&value);
-    //     pinned.say_hi(); // Expect "Hi from T ..."
-    // }
+    #[test]
+    fn test_slice_say_hi() {
+        let value: &[u8] = b"Hello";
+        let pinned = Pin::new(&value);
+        pinned.say_hi();
+    }
 
-    // #[test]
-    // fn test_t_mut_me_somehow() {
-    //     let mut value = 42;
-    //     let mut pinned = Pin::new(&mut value);
-    //     pinned.as_mut().mut_me_somehow();
-    //     assert_eq!(value, 0); // Assuming the mutation sets it to the default value
-    // }
+    #[test]
+    fn test_slice_mut_me_somehow() {
+        let mut value: &[u8] = b"Hello";
+        let mut pinned = Pin::new(&mut value);
+        pinned.as_mut().mut_me_somehow();
+        let fake_secret = [1, 2, 3];
+        assert_eq!(value, &fake_secret);
+    }
 }
