@@ -41,6 +41,7 @@ fn main() {
     let stack_clone = stack.clone();
 
     stack_clone.push(4);
+
     while let Some(value) = stack.pop() {
         println!(
             "Popped value: {}, length {}, stack is empty? {}",
@@ -110,5 +111,19 @@ mod tests {
 
         // Pop from empty stack
         assert_eq!(stack.pop(), None);
+    }
+
+        #[test]
+    fn test_drop_origin_stack() {
+        let stack: GlobalStack<i32> = GlobalStack::new();
+        let stack_clone = stack.clone();
+        stack.push(1);
+        drop(stack);
+
+        stack_clone.push(2);
+
+        assert_eq!(stack_clone.len(), 2);
+        assert_eq!(stack_clone.pop(), Some(2));
+        assert_eq!(stack_clone.pop(), Some(1));
     }
 }
